@@ -1,0 +1,7 @@
+app/static/
+!app/static/.gitkeep
+!app/static/reconstruction_sequential
+openMVG/
+openMVS/
+uploads/
+!uploads/.gitkeep

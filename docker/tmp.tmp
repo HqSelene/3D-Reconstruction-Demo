@@ -1,0 +1,80 @@
+FROM ubuntu:20.04
+
+# 1. 基础环境配置
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    build-essential cmake git wget curl unzip tar pkg-config \
+    graphviz coinor-libclp-dev libceres-dev \
+    libboost-all-dev libeigen3-dev libsuitesparse-dev \
+    libpng-dev libjpeg-dev libtiff-dev libglu1-mesa-dev libglew-dev \
+    libatlas-base-dev libopenimageio-dev libopencv-dev libvtk7-dev \
+    libgl1-mesa-dev libproj-dev python3 python3-pip \
+    libtbb-dev \
+    libxi-dev libxinerama-dev libxcursor-dev libxxf86vm-dev \
+    libboost-iostreams-dev libboost-program-options-dev \
+    libboost-system-dev libboost-serialization-dev \
+    software-properties-common \
+    && add-apt-repository -y ppa:ubuntu-toolchain-r/test \
+    && apt-get update && apt-get install -y \
+    libflann-dev libcgal-dev libopencv-dev libglfw3-dev \
+    libatlas-base-dev && \
+    apt-get autoclean && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get install -y --no-install-recommends \
+    build-essential cmake git wget \
+    libboost-all-dev \
+    libflann-dev \
+    libeigen3-dev libsuitesparse-dev libcgal-dev \
+    libopencv-dev libglfw3-dev libglew-dev \
+    libatlas-base-dev libtbb-dev \
+    python3 python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# 3. 安装特定版本Eigen（覆盖系统版本）
+WORKDIR /tmp
+RUN git clone https://gitlab.com/libeigen/eigen.git -b 3.4.0 \
+    && mkdir eigen_build && cd eigen_build \
+    && cmake ../eigen -DCMAKE_INSTALL_PREFIX=/usr \
+    && make install \
+    && cd .. && rm -rf eigen*
+
+# 4. 安装COLMAP（先于openMVG）
+RUN git clone https://github.com/colmap/colmap.git \
+    && mkdir colmap_build && cd colmap_build \
+    && cmake ../colmap -DCMAKE_BUILD_TYPE=Release \
+       -DEIGEN3_INCLUDE_DIR=/usr/include/eigen3 \
+    && make -j$(nproc) install \
+    && cd .. && rm -rf colmap*
+
+# 5. 安装openMVG（关键修改）
+RUN git clone --recursive https://github.com/openMVG/openMVG.git \
+    && mkdir openMVG_build && cd openMVG_build \
+    && cmake ../openMVG/src \
+       -DCMAKE_BUILD_TYPE=Release \
+       -DOpenMVG_USE_OPENCV=ON \
+       -DEIGEN_INCLUDE_DIR_HINTS=/usr/include/eigen3 \
+    && make -j$(nproc) install \
+    && cp ../openMVG/src/openMVG/exif/sensor_width_database/sensor_width_camera_database.txt /usr/local/bin/ \
+    && cd .. && rm -rf openMVG*
+
+# 6. 安装VCGLib（固定提交）
+RUN git clone https://github.com/cdcseacave/VCG.git vcglib \
+    && cd vcglib && git checkout de3a397 \
+    && cd ..
+
+# 7. 安装openMVS（关键路径指定）
+RUN git clone https://github.com/cdcseacave/openMVS.git \
+    && mkdir openMVS_build && cd openMVS_build \
+    && cmake ../openMVS \
+       -DCMAKE_BUILD_TYPE=Release \
+       -DVCG_ROOT=/vcglib \
+       -DEIGEN3_INCLUDE_DIR=/usr/include/eigen3 \
+    && make -j$(nproc) install \
+    && cd .. && rm -rf openMVS*
+
+# 8. 清理空间
+RUN apt-get autoremove -y \
+    && rm -rf /tmp/* /var/tmp/*
+
+WORKDIR /app
+CMD ["bash"]
