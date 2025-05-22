@@ -5,6 +5,25 @@ This is a demo web application for 3D reconstruction from photographs using Open
 # 🔧 Project Overview
 The pipeline takes a set of photos of an object or scene and reconstructs a textured 3D model using structure-from-motion (SfM) and multi-view stereo (MVS) techniques. The system runs in a containerized environment built with Docker to simplify the setup of legacy dependencies.
 
+## Project Structure
+3D-Reconstruction-Demo/
+├── app/                          # Flask application
+│   ├── static/                   # Static assets (images, results, etc.)
+│   │   ├── reconstruction_sequential/  # Temporary folder for 3D reconstruction
+│   │   └── .gitkeep              # Placeholder to keep directory in Git
+│   ├── templates/                # HTML templates
+│   │   └── index.html
+│   ├── main.py                    # Main Flask server
+│   └── utils.py                   # Main Function Realization
+├── uploads/                      # Temporary folder for uploaded image sets
+│   └── .gitkeep
+├── Dockerfile                    # Docker image definition
+├── docker-compose.yml           # Docker Compose configuration
+├── .gitignore                   # Git ignore rules
+├── README.md                    # Project documentation
+└── requirements.txt             # Python dependencies
+
+
 # 🧱 Core Tools
 - **OpenMVG**: Structure-from-Motion (SfM) for sparse point cloud and camera pose estimation
 - **OpenMVS**: Multi-View Stereo (MVS) for dense reconstruction and mesh generation
